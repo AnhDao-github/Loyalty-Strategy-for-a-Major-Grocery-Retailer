@@ -1,0 +1,451 @@
+---
+title: "20250923-IndividualProject01-DaoDang-003245480"
+output: html_document
+date: "2025-09-23"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# 1. Executive summary
+
+This report explores how Supi Supermarket can maximize profitability during the holiday season by designing a targeted Gold Membership campaign. Relying on transaction and demographic data, and guided by segmentation and positioning frameworks, the analysis reveals Supi’s most profitable customer groups and the strategic actions needed to convert insights into growth.
+
+The findings reveal that Supi’s most profitable customers in the “Star” quadrant: Champions, Potential Loyalists, and Loyal Customers, who together account for ~45% of revenue despite being less than one-third of the customer base. These shoppers are typically older, affluent, and favor in-store purchases of wine and meat - the categories where Supi already stand out.
+
+On the other hand, “Light” customers: At Risk, Needs Attention make up the largest share of the customer pool (over 35%) but contribute little to revenue. Many are younger, lower in income, and digitally active, making them vulnerable to Lidl and Tokmanni’s price-driven model.
+
+To address these dynamics, this report recommends a tiered membership strategy, personalized communication (in phone call, POSM and digital touch-points) by segment, and sharper positioning of Supi’s existing premium strengths. By pairing exclusivity with affordability, Supi can both grow loyalty among its best customers and defend against market share decrease at the lower end.
+
+# 2. Introduction
+
+Supi Supermarket is one of Finland’s leading grocery retailers, competing directly with SOK, Kesko, Lidl, Alko, and Tokmanni. Operating in a market defined by strong loyalty programs and intense price competition, Supi faces ascending pressure as consumers grow more cost-sensitive under economic downturn. In this environment, sustaining customer relationships is not just advantageous but essential.
+
+This report aims to:
+
+- Profile Supi’s customer base using demographic, behavioral, and value segmentation.
+- Identify the customer groups most likely to respond to the Gold Membership campaign.
+- Recommend actionable strategies across product, pricing, and communication to strengthen loyalty and profitability.
+
+# 3. Industry analysis
+
+Finland’s grocery market is being reshaped by two opposing forces: rising consumer price sensitivity and intensifying loyalty ecosystems. Lidl has positioned itself as the go-to for low-cost essentials with private-label dominance, while SOK and Kesko strengthen ties with expanded card-based loyalty programs. Tokmanni leverages its variety retail model to capture value-conscious shoppers. (SOK’s S-Etukortti, Kesko’s K-Plussa).
+
+In the context of these competitive pressures, Supi’s opportunity lies in deepening engagement with its most profitable customers. Industry-wide trends show that consumers are now more selective about recurring memberships, but when loyalty programs connect emotionally and deliver tangible value, they remain highly resilient.
+
+# 4. Methods
+
+The analysis combined descriptive statistics with marketing models to create a rounded picture of Supi’s customer base. The applied methods are as following:
+
+- Segmentation Matrix (2x2): Categorized customers by current value (total spend) and potential value (income).
+
+- RFM Analysis: Identified Champions, Loyal Customers, Potential Loyalists, At Risk, and Need Attention segments.
+
+- Demographic profiling: Age, marital status, family status.
+
+- Behavioral profiling: Distribution channel preferences (store, catalog, online), category spending, complaint patterns.
+
+- Correlation analysis: Explored links between income, spending, RFM, and complaints.
+
+These findings were then interpreted using the STP framework and the 4Ps of marketing to guide practical recommendations.
+
+# 5. Key findings
+
+## 5.1 Inspect the data structure
+
+```{r}
+# Load the packages
+library(tidyverse)
+library(scales)
+library(corrplot)
+
+#Import data set
+supi <- read.csv ("supiforgraphs.csv", header = TRUE, sep = ",")
+
+# Inspect data
+str(supi)
+head(supi)
+summarise(supi)
+```
+
+**First observations**
+
+- We have 31 variables which can be converted into valuable insight about demographics and buying behavior if the patterns are visualized.
+
+- The RFM Category (Champions, At Risk, etc.) is the most important variable. It is the master classification used to segment customers by value and link all other data points together.
+
+- Create new variable AgeGroup to convert continuous data (age) into simple, clear segments that are easy to visualize and target with specific marketing actions.
+
+## 5.2 Visualize customer segmentation matrix
+
+```{r}
+# Define thresholds
+median_spend <- median(supi$TotalSpend, na.rm = TRUE)
+median_income <- median (supi$Income, na.rm = TRUE)
+
+# Create the scatter plot for the 2x2 segmentation matrix
+ggplot(supi, aes(x = TotalSpend, y = Income, color = RFM_Category)) +
+  geom_point(alpha = 0.6, size = 2) +
+  geom_vline(xintercept = median_spend, linetype = "dashed", color = "black", size = 1) +
+  geom_hline(yintercept = median_income, linetype = "dashed", color = "black", size = 1) +
+  labs(
+    title = "Customer Segmentation Matrix: Total Spend vs. Income",
+    subtitle = "Divided by Median Spend and Income",
+    x = "Total Spend",
+    y = "Income",
+    color = "RFM Category"
+  ) +
+  theme_minimal()
+```
+
+## 5.3 Purchasing power statistics
+
+```{r}
+RFM_summary <- supi %>%
+  group_by (RFM_Category) %>%
+  summarise(
+    Count = n(),
+    Avg_Age = round(mean(Age, na.rm = TRUE), 1),
+    Avg_Income = round(mean(Income, na.rm = TRUE), 0),
+    Avg_Spend = round(mean(TotalSpend, na.rm = TRUE), 1)
+  ) %>%
+  mutate(Percent = round(Count / sum(Count) * 100, 1)) %>%
+mutate(RFM_Category = fct_reorder(RFM_Category, Count))
+
+print(RFM_summary)
+```
+
+## 5.4 Visualize to highlight wthen pool distribution
+
+```{r}
+library(scales)
+# Create slices and labels
+slices2 <- RFM_summary$Count
+labels2 <- RFM_summary$RFM_Category
+pct2 <- slices2 / sum(slices2)
+labels2 <- paste0(labels2, " ", percent (pct2))
+
+# Create the pie chart
+pie(slices2,
+    labels = labels2,
+    col = rainbow(length(labels2)),
+    main = "Contribution by RFM Category")
+```
+
+**Observations for 5.2, 5.3 & 5.4**
+
+In the matrix diagram, x-axis is total spending and y-axis is income. The segmentation reveals four distinct quadrants:
+
+- Stars (Champions, Loyal Customers, Potential Loyalists): High income and high spend. They represent the revenue backbone of Supi, especially Champions (~15% of customers) whose monthly spend averages 1,300 euros.
+
+- Disengaged/New: Customers with potential (high income or high spend) but not both. One notable out-lier spends nearly 2,000 euros/month despite modest income worth deeper behavioral investigation.
+
+- Light (At Risk, Needs Attention): Numerous (over 35% combined) but low in income and spend. For example, “Need Attention” is the single largest segment at 23.5% of the base, with average age 54 and average monthly spend below 300 euros.
+
+The data makes the trade-off explicit: Supi’s largest customer pool contributes the least, while its smaller, older premium segments drive profitability.
+
+## 5.5 Customer profiling
+
+5.5.1 Visualize customer demographic dynamics (exclude "At Risk" and "Others")
+
+```{r}
+# Create AgeGroup variable
+supi <- supi %>%
+  mutate (AgeGroup = case_when(
+    Age < 30 ~ "Young",
+    Age >= 30 & Age <= 45 ~ "Prime",
+    Age >= 46 & Age <= 60 ~ "Mature",
+    TRUE ~ "Senior"))
+
+# Filter out the "At Risk" and "Others" categories
+customers_filtered <- supi %>%
+  filter(!RFM_Category %in% c("At Risk", "Others"))
+
+# Summarize the contribution (%) for each demographic attribute
+age_summary <- customers_filtered %>%
+  group_by(Attribute = AgeGroup) %>%
+  summarise(Count = n()) %>%
+  mutate(Category = "Age Group",
+         Percent = Count / sum(Count) * 100)
+
+has_kids_summary <- customers_filtered %>%
+  group_by(Attribute = Has_Kids) %>%
+  summarise(Count = n()) %>%
+  mutate(Category = "Family Status",
+         Percent = Count / sum(Count) * 100)
+
+marital_status_summary <- customers_filtered %>%
+  group_by(Attribute = Marital_Status) %>%
+  summarise(Count = n()) %>%
+  mutate(Category = "Marital Status",
+         Percent = Count / sum(Count) * 100)
+
+# Combine the three summary tables into a single data frame
+combined_customers_summary <- bind_rows(age_summary, has_kids_summary, marital_status_summary)
+
+# Reorder the attributes for better visualization
+combined_customers_summary <- combined_customers_summary %>%
+  mutate(Attribute = fct_reorder(Attribute, Percent))
+
+# Create the faceted bar chart for the filtered group
+ggplot(combined_customers_summary, aes(x = Attribute, y = Percent, fill = Category)) +
+  geom_bar(stat = "identity", width = 0.7) +
+  geom_text(aes(label = paste0(round(Percent), "%")), vjust = -0.5, size = 3) +
+  facet_wrap(~ Category, scales = "free_x") +
+  labs(
+    title = "Demographics of All Customers (Excluding 'At Risk')",
+    x = "",
+    y = "Percentage",
+    fill = "Demographic"
+  ) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  scale_y_continuous(labels = scales::percent_format(scale = 1))
+```
+
+5.5.2 Visualize where do these segments shop
+
+```{r}
+library(scales)
+# Allocate spend by dsitribution channel
+supi_long <- supi %>%
+  select(RFM_Category, NumStorePurchases, NumWebPurchases, NumCatalogPurchases, TotalSpend) %>%
+  rowwise() %>%
+  mutate(TotalPurchases = NumStorePurchases + NumWebPurchases + NumCatalogPurchases,
+         Spend_Store   = ifelse(TotalPurchases > 0, TotalSpend * NumStorePurchases / TotalPurchases, 0),
+         Spend_Web     = ifelse(TotalPurchases > 0, TotalSpend * NumWebPurchases / TotalPurchases, 0),
+         Spend_Catalog = ifelse(TotalPurchases > 0, TotalSpend * NumCatalogPurchases / TotalPurchases, 0)) %>%
+  ungroup() %>%
+  select(RFM_Category, Spend_Store, Spend_Web, Spend_Catalog) %>%
+  pivot_longer(cols = starts_with("Spend"),
+               names_to = "Channel",
+               values_to = "Spend") %>%
+  mutate(Channel = recode(Channel,
+                          "Spend_Store" = "Store",
+                          "Spend_Web" = "Web",
+                          "Spend_Catalog" = "Catalog"))
+
+# Aggregate
+channel_spend <- supi_long %>%
+  group_by(RFM_Category, Channel) %>%
+  summarise(AvgSpend = mean(Spend, na.rm = TRUE),
+            .groups = "drop")
+
+# Create plot facet wrap
+ggplot(channel_spend, aes(x = Channel, y = AvgSpend, fill = Channel)) +
+  geom_col(show.legend = FALSE)+
+  facet_wrap(~ RFM_Category) +
+  labs(title = "Average Spend Allocation by Channel across RFM Category",
+       x = "Channel",
+       y = "Average Spend (Euros)") +
+  theme_minimal()
+```
+
+5.5.3 Visualize what do they buy by product category
+
+```{r}
+library(scales)
+# Allocate spend by product
+supi_long_products <- supi %>%
+  select(RFM_Category, MntWines, MntFruits, MntMeatProducts, MntFishProducts, MntSweetProducts, MntGoldProds) %>%
+  pivot_longer(
+    cols = starts_with("Mnt"),
+    names_to = "Product",
+    values_to = "Spend"
+  ) %>%
+  mutate(Product = recode(Product,
+                          "MntWines" = "Wines",
+                          "MntFruits" = "Fruits",
+                          "MntMeatProducts" = "Meat",
+                          "MntFishProducts" = "Fish",
+                          "MntSweetProducts" = "Sweets",
+                          "MntGoldProds" = "Gold"))
+
+# Aggregate the average spend for each product by RFM category
+product_spend <- supi_long_products %>%
+  group_by(RFM_Category, Product) %>%
+  summarise(AvgSpend = mean(Spend, na.rm = TRUE),
+            .groups = "drop")
+
+# Create plot facet wrap showing the average spend allocation by product
+ggplot(product_spend, aes(x = Product, y = AvgSpend, fill = Product)) +
+  geom_col(show.legend = FALSE) +
+  facet_wrap(~ RFM_Category) +
+  labs(
+    title = "Average Spend Allocation by Product across RFM Category",
+    x = "Product",
+    y = "Average Spend (Euros)"
+  ) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+5.5.4 Visualize web visits frequency by RFM category
+
+```{r}
+# Calculate the average number of web visits 
+web_visits_summary <- supi %>%
+  group_by(RFM_Category) %>%
+  summarise(Avg_WebVisits = mean(NumWebVisitsMonth, na.rm = TRUE))
+
+# Create bar chart
+ggplot(web_visits_summary, aes(x = RFM_Category, y = Avg_WebVisits, fill = RFM_Category)) +
+  geom_bar(stat = "identity") +
+  geom_text(aes(label = round(Avg_WebVisits, 1)), vjust = -0.5, size = 4) +
+  labs(
+    title = "Average Monthly Web Visits by RFM Category",
+    x = "RFM Category",
+    y = "Average Monthly Web Visits"
+  ) +
+  theme_minimal()
+```
+
+5.5.5 Visualize spending by product category
+
+```{r}
+supi_productcategory <- supi %>%
+  select(Wines = MntWines,
+         Fruits = MntFruits,
+         Meat = MntMeatProducts,
+         Fish = MntFishProducts,
+         Sweets = MntSweetProducts,
+         Gold = MntGoldProds) %>%
+  summarise(across(everything(), sum)) %>%
+  pivot_longer(cols = everything(), names_to = "Category", values_to = "Total")
+
+# Prepare slices and labels
+slices <- supi_productcategory$Total
+labels <- supi_productcategory$Category
+pct <- slices / sum(slices)
+labels <- paste0(labels, " ", percent(pct))
+
+# Create plot pie chart 
+pie(slices,
+    labels = labels,
+    col = rainbow(length(labels)),
+    main = "Share of total spending by product category")
+```
+
+5.5.6 Visualize who complain the most
+
+```{r}
+# Summarize the complaint data for all RFM categories
+complaint_summary_all <- supi %>%
+  group_by(RFM_Category, Complaint = ifelse(Complaint == 1, "Complain", "No Complain")) %>%
+  summarise(Count = n(), .groups = "drop_last") %>%
+  mutate(Percent = Count / sum(Count) * 100) %>%
+  ungroup()
+
+# Print the summary to see the numbers
+print(complaint_summary_all)
+
+# Visualize the numbers
+ggplot(complaint_summary_all, aes(x = RFM_Category, y = Percent, fill = Complaint)) +
+  geom_bar(stat = "identity", position = "stack") +
+  geom_text(aes(label = paste0(round(Percent, 1), "%")),
+            position = position_stack(vjust = 0.5), size = 3) +
+  labs(
+    title = "Complaint Contribution by RFM Category",
+    x = "RFM Category",
+    y = "Percentage",
+    fill = "Complaint Status"
+  ) +
+  scale_fill_manual(values = c("Complain" = "Yellow", "No Complain" = "Skyblue")) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+**Observations for 5.5 - Customer Profiling**
+
+- *Champions*
+
+Champions are the top revenue drivers. This 15% segment reports the highest income (73K euros) and spends the most (1.3K euro on average). They are typically older, married adults with no children and are traditional shoppers as they prefer in-store purchases and are generally low web visitors. Their loyalty is focused on luxury: wine and meat, spending dramatically more on these key categories. Most critically, they never complain. Focus: high-touch experience, exclusive product access, and effortless service.
+
+- *Potential Loyalists*
+
+This is the largest high-potential group, representing 20% of all customers. They are characterized by high income (70K euros) and strong spending (1.2K euros). The majority of this group are older, married, childless adults. Like the Champions, they are low-frequency web visitors and tend to shop in-store. Their buying mirrors the elite, focusing on wine and meat. They maintain a very low complaint rate of 1%. Focus: convert their high potential into long-standing loyalty by celebrating their high value and encouraging repeat visits.
+
+- *Loyal Customers*
+
+This 11% segment shops often, but their loyalty requires effort. While they are frequent purchasers, their spending is only average (~0.5K euro on average), suggesting they are regular but budget-conscious buyers. The majority of these customers are older and married without children. They are highly digital, visiting the website more often than any other high-value segment. Critically, they also have the highest complaint rate (1.9%). Their high engagement means they demand high standards. Focus: prioritize exceptional customer service to keep their frequent buying cycle intact.
+
+- *Needs Attention & At Risk*
+
+These groups are risk segments as they are generally younger, have lower income, and don't spend much. Their most defining characteristic is very high web activity, visiting the website over six times per month. This suggests they are actively comparison shopping or looking for deals rather than committing to purchases. The majority of them shop across both in-store and online. They are also more likely to complain (over 1%). Focus: targeted offers and clear value messaging to convert their high engagement into committed spending before they disappear.
+
+## 5.6 Correlation coefficients between Spending, RFM Score, Income and Complaint
+
+```{r}
+# Filter and select the variables for correlation
+correlation <- supi %>%
+  select(TotalSpend, RFM_Score, Complaint, Income)
+
+# Calculate the correlation matrix
+correlation_matrix <- cor(correlation, use = "complete.obs")
+
+# Print the correlation matrix
+print("Correlation Matrix:")
+print(correlation_matrix)
+
+# Visualize the correlation matrix
+library (corrplot)
+corrplot(correlation_matrix,
+         method = "color",
+         type = "upper",  
+         addCoef.col = "black",
+         tl.col = "black", 
+         tl.srt = 45,      
+         diag = FALSE)
+```
+
+**Observations for 5.6**
+
+Strong correlation
+
+- Income & total spend , total spend & RFM Score scores is 0,79 showing the strongest correlation. 
+
+- Income & RFM score is 0.7 also shows strong link between these two variables.
+
+Weak correlation:
+
+- Complaint & other values score is -0.04 showing no linear correlation between whether a customer has complained and their spending, RFM score, or income.
+
+*Conclusion*
+
+The strong correlation between income, RFM score, and total spend confirms that wealthier and more engaged customers drive significant revenue. Interestingly, complaints show no strong link to value, meaning dissatisfaction is spread evenly across groups. This highlights a systemic service challenge rather than a segment-specific one.
+
+# 6. Strategic recommendations
+
+## 4Ps applied
+
+## Promotion: Design tier-based membership
+
+- Position Gold Membership as a premium lifestyle offer for Stars segment, with benefits like limited edition wine, meat and sweet products sold exclusively, wine or/and meat bundles, 20% discounts across all products, and VIP services.
+
+- Offer Silver membership to Disengaged/New customers, focusing on increasing basket size and accelerating their path to the premium Gold tier, like weekly wine & meat pairing at a reasonable discount (10-15%) to leverage their spending preference without giving away the premium 20% Gold discount.
+
+- Introduce a Bronze membership for Light customers, offering everyday savings and accumulative scores to make the effort of shopping with Supi feel more rewarding and highlight the path toward Silver. This can keep them within Supi’s ecosystem and stand out Lidl’s deals.
+
+## Place: Sharpen channel marketing strategy
+
+Older segments remain in-store-oriented, while younger groups go digital. Supi’s campaigns must reflect this dynamic by organizing targeted store events for Stars and high-earning shoppers, combine with engaging digital content for Light customers. A consistent message across all touch-points will strengthen Supi image as a strong supermarket brand.
+
+## Product: Take advantage of product strengths
+
+Wine and meat are Supi’s top-of-mind categories. Position Gold Membership as a gateway to premium experiences with exclusive tasting event, curated bundles for year-end season, or holiday promotions. For Light customers, highlight Supi’s ability to still provide quality essentials at competitive prices with budget packs, etc.
+
+## Customize messaging by segment
+
+- For Champions, emphasize exclusivity *"An exclusive preview, reserved only for our top-tier clients"*
+
+- For Loyal Customers, directly address service quality to rebuild trust *"We heard your feedback: it matters"*
+
+- For Potential Loyalists, craft inspirational messaging tied to lifestyle and tradition, affirm them toward higher-value behavior *"You have built a successful life. Our products are designed to fit that life seamlessly"*
+
+- For Need Attention, focus on affordability and convenience *"Max value, minimum price"*
+
+# 7. Limitations and conclusions
+
+This report analyzes only current Supi customers, which creates a bias by ignoring potential buyers and the wider market. Price recommendations cannot be offered because pricing data was not included in the original dataset. Furthermore, the Complaint data is likely unreliable and too low. I believe actual customer dissatisfaction is higher because many people are hesitant to formally report issues. Finally, the report lacks a complete market view because I was unable to reliably collect current competitor data.
+
