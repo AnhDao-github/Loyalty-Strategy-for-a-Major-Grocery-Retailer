@@ -5,7 +5,7 @@ In a grocery market defined by intense price competition and economic downturn, 
 
 By analyzing transaction records, demographics, and behavioral data, this project utilizes RFM segmentation to identify the most profitable customer groups. The analysis bridges the gap between raw data and business strategy, delivering actionable recommendations across product focus, channel marketing, and personalized communication to protect market share and drive revenue.
 
-**[👉 View the full interactive HTML Data Report here](INSERT_YOUR_GITHUB_PAGES_LINK_HERE)**
+**[👉 View the full interactive HTML Data Report here](https://anhdao-github.github.io/Loyalty-Strategy-for-a-Major-Grocery-Retailer/)**
 
 ## 🛠️ Tech Stack & Methodology
 * **Language:** R
